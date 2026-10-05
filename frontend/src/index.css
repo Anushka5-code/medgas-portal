@@ -1,0 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+/* ── Global tokens ─────────────────────────────────────────── */
+:root {
+  --color-primary:  #2F80ED;
+  --color-accent:   #F0386B;
+  --color-navy:     #1E2A4A;
+  --color-muted:    #8A94A6;
+  --color-bg:       #F4F7FC;
+  --color-surface:  #FFFFFF;
+  --color-success:  #22C55E;
+  --color-warning:  #F5A524;
+  --color-danger:   #EF4444;
+  --shadow-card:    0 4px 24px rgba(80,110,180,0.08);
+  --shadow-hover:   0 8px 32px rgba(80,110,180,0.14);
+}
+
+/* ── Base ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Poppins', 'Inter', system-ui, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-navy);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #D0D8EC; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #B0BCD8; }
+
+/* ── Utility helpers ───────────────────────────────────────── */
+.card {
+  background: var(--color-surface);
+  border-radius: 1rem;
+  box-shadow: var(--shadow-card);
+  padding: 1.25rem;
+}
+
+.card-hover {
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.card-hover:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
+}
+
+/* ── Pulsing live dot ──────────────────────────────────────── */
+@keyframes livePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+  50%       { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+}
+.live-dot {
+  animation: livePulse 2s infinite;
+}
+@keyframes livePulseRed {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+  50%       { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+}
+.live-dot-red {
+  animation: livePulseRed 2s infinite;
+}
+
+/* ── Count-up number ───────────────────────────────────────── */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.count-up { animation: countUp 0.4s ease-out; }
+
+/* ── Toast ─────────────────────────────────────────────────── */
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(8px) scale(0.95); }
+}
+.toast-in  { animation: toastIn  0.25s ease-out forwards; }
+.toast-out { animation: toastOut 0.2s  ease-in  forwards; }
+
+/* ── Drawer ────────────────────────────────────────────────── */
+@keyframes drawerIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.drawer-in { animation: drawerIn 0.25s ease-out forwards; }
+
+/* ── Sidebar nav active indicator ─────────────────────────── */
+.nav-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: var(--color-primary);
+  border-radius: 0 4px 4px 0;
+}
+
+/* ── Recharts overrides ────────────────────────────────────── */
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  border-radius: 0.75rem !important;
+  border: 1px solid #E8EEFA !important;
+  box-shadow: var(--shadow-card) !important;
+  font-family: 'Poppins', sans-serif !important;
+  font-size: 12px !important;
+}
+
+/* ── Background decoration ────────────────────────────────── */
+.bg-dots {
+  background-image: radial-gradient(circle, #CBD5E8 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* ── Page fade-in ──────────────────────────────────────────── */
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-fade-in {
+  animation: pageFadeIn 0.2s ease-out forwards;
+}
+
+/* ── Shimmer skeleton ──────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
