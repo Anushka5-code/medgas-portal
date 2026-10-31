@@ -11,7 +11,7 @@
 import { createContext, useState, useEffect, useCallback } from 'react';
 
 const TOKEN_KEY = 'medigas_token';
-const BASE_URL  = 'http://localhost:8000';
+const BASE_URL  = '';
 
 export const AuthContext = createContext(null);
 

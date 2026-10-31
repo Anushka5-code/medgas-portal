@@ -8,7 +8,7 @@
  *   • builds WebSocket URL with ?token=<token>
  */
 
-const BASE_URL  = 'http://localhost:8000';
+const BASE_URL  = '';
 const TOKEN_KEY = 'medigas_token';
 
 function getToken() {
@@ -65,7 +65,7 @@ export const api = {
   wsUrl: () => {
     const token = getToken();
     return token
-      ? `ws://localhost:8000/ws?token=${encodeURIComponent(token)}`
-      : `ws://localhost:8000/ws`;
+      ? `ws://localhost:5173/ws?token=${encodeURIComponent(token)}`
+      : `ws://localhost:5173/ws`;
   },
 };

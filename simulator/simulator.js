@@ -20,6 +20,7 @@ const { parse } = require('csv-parse/sync');
 
 // ── Configuration ────────────────────────────────────────────────────────────
 const BACKEND_URL  = process.env.BACKEND_URL  || 'http://localhost:3001';
+const API_KEY      = process.env.SIMULATOR_API_KEY || 'sim-secret-key-2024';
 const MIN_DELAY_MS = parseInt(process.env.MIN_DELAY_MS || '2000',  10);
 const MAX_DELAY_MS = parseInt(process.env.MAX_DELAY_MS || '6000',  10);
 const CSV_PATH     = process.env.CSV_PATH
@@ -114,10 +115,14 @@ async function runDevice(deviceId) {
     const isoNow    = now.toISOString();
     const status    = pressureStatus(row.pressure);
 
+    // Generate a realistic oxygen purity between 93–99 (with occasional dips)
+    const oxygenPurity = parseFloat((93 + Math.random() * 6).toFixed(2));
+
     const payload = {
-      device_id : deviceId,
-      pressure  : row.pressure,
-      timestamp : isoNow,
+      device_id     : deviceId,
+      pressure      : row.pressure,
+      oxygen_purity : oxygenPurity,
+      timestamp     : isoNow,
     };
 
     // 4. Log to console
@@ -136,7 +141,10 @@ async function runDevice(deviceId) {
     try {
       await axios.post(`${BACKEND_URL}/readings`, payload, {
         timeout: 5000,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': API_KEY,
+        },
       });
     } catch (err) {
       const msg = err.response

@@ -5,13 +5,14 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      // Proxy all /api-like routes through Vite → backend
-      // This avoids CORS and localhost/127.0.0.1 IPv6 issues on Windows
-      '/readings': 'http://127.0.0.1:8000',
-      '/devices':  'http://127.0.0.1:8000',
-      '/alerts':   'http://127.0.0.1:8000',
+      '/auth':     'http://127.0.0.1:3001',
+      '/readings': 'http://127.0.0.1:3001',
+      '/devices':  'http://127.0.0.1:3001',
+      '/alerts':   'http://127.0.0.1:3001',
+      '/wards':    'http://127.0.0.1:3001',
+      '/handover': 'http://127.0.0.1:3001',
       '/ws': {
-        target: 'ws://127.0.0.1:8000',
+        target: 'ws://127.0.0.1:3001',
         ws: true,
       },
     },

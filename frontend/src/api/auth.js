@@ -6,7 +6,7 @@
  * Exported here for any component that needs them independently.
  */
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = '';
 
 export async function apiLogin({ username, password, role }) {
   const res = await fetch(`${BASE_URL}/auth/login`, {
