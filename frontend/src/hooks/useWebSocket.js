@@ -18,21 +18,25 @@ export function useWebSocket(onMessage) {
 
   const connect = useCallback(() => {
     if (destroyed.current) return;
-    // api.wsUrl() returns ws://localhost:8000/ws?token=<JWT>
+    // api.wsUrl() returns ws://localhost:3001/ws?token=<JWT>
     const url = api.wsUrl();
+    console.log('🔌 WebSocket connecting to:', url);
     const ws  = new WebSocket(url);
     wsRef.current = ws;
 
     ws.onopen = () => {
+      console.log('✅ WebSocket connected successfully');
       setConnected(true);
       retryDelay.current = 1000;
     };
 
     ws.onmessage = (evt) => {
+      console.log('📩 WebSocket message received:', evt.data.substring(0, 100));
       onMsgRef.current?.(evt);
     };
 
-    ws.onclose = () => {
+    ws.onclose = (evt) => {
+      console.log('❌ WebSocket closed:', evt.code, evt.reason);
       setConnected(false);
       if (!destroyed.current) {
         retryTimer.current = setTimeout(() => {
@@ -42,7 +46,10 @@ export function useWebSocket(onMessage) {
       }
     };
 
-    ws.onerror = () => ws.close();
+    ws.onerror = (err) => {
+      console.error('⚠️ WebSocket error:', err);
+      ws.close();
+    };
   }, []);
 
   useEffect(() => {
