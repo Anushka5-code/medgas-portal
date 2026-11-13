@@ -124,7 +124,7 @@ export function useDashboardData({ wardId } = {}) {
 
         const label = safeTimeLabel(r.timestamp);
         if (!label) continue;
-        if (!oTrend[label]) oTrend[label] = { time: label };
+        if (!oTrend[label]) oTrend[label] = { time: label, D001: null, D002: null, D003: null, D004: null };
         if (r.oxygen_purity != null) oTrend[label][did] = r.oxygen_purity;
       }
 
@@ -203,8 +203,14 @@ export function useDashboardData({ wardId } = {}) {
       if (label) {
         setPurityTrend(prev => {
           const last = prev[prev.length - 1];
-          if (last?.time === label) return [...prev.slice(0, -1), { ...last, [did]: purity }].slice(-TREND_BUCKETS);
-          return [...prev, { time: label, [did]: purity }].slice(-TREND_BUCKETS);
+          const newPoint = last?.time === label 
+            ? { ...last, [did]: purity }
+            : { time: label, D001: null, D002: null, D003: null, D004: null, [did]: purity };
+          
+          if (last?.time === label) {
+            return [...prev.slice(0, -1), newPoint].slice(-TREND_BUCKETS);
+          }
+          return [...prev, newPoint].slice(-TREND_BUCKETS);
         });
       }
 

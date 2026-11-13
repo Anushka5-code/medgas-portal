@@ -29,16 +29,6 @@ function CustomTooltip({ active, payload, label }) {
 export function PurityTrendChart({ data = [], singleDevice }) {
   const devices = singleDevice ? [singleDevice] : ALL_DEVICES;
 
-  // Debug: log first/last data points
-  if (data.length > 0) {
-    console.log('PurityTrendChart data sample:', {
-      first: data[0],
-      last: data[data.length - 1],
-      length: data.length,
-      devices,
-    });
-  }
-
   if (!data.length) {
     return (
       <div className="flex flex-col h-full gap-3">
@@ -84,7 +74,7 @@ export function PurityTrendChart({ data = [], singleDevice }) {
             <XAxis dataKey="time"
               tick={{ fontSize:10, fill:'#8A94A6', fontFamily:'Poppins,sans-serif' }}
               tickLine={false} axisLine={false} interval="preserveStartEnd" />
-            <YAxis domain={['auto', 'auto']}
+            <YAxis domain={['dataMin - 5', 'dataMax + 5']}
               tick={{ fontSize:10, fill:'#8A94A6', fontFamily:'Poppins,sans-serif' }}
               tickLine={false} axisLine={false}
               tickFormatter={v => `${v}%`} />
