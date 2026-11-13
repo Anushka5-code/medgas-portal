@@ -64,8 +64,9 @@ export const api = {
   // WebSocket URL builder (includes token)
   wsUrl: () => {
     const token = getToken();
+    // Connect directly to backend on port 3001 (bypass Vite proxy)
     return token
-      ? `ws://localhost:5173/ws?token=${encodeURIComponent(token)}`
-      : `ws://localhost:5173/ws`;
+      ? `ws://localhost:3001/ws?token=${encodeURIComponent(token)}`
+      : `ws://localhost:3001/ws`;
   },
 };
