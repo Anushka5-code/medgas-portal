@@ -31,19 +31,17 @@ const sleep   = ms => new Promise(r => setTimeout(r, ms));
 const pad     = n  => String(n).padStart(2, '0');
 const timeStr = d  => `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 
-// ── Scenario definitions ───────────────────────────────────────────────────
-// Each scenario returns { pressure, oxygen_purity, label }
+// ── Scenario definitions — OXYGEN PURITY ONLY ─────────────────────────────
+// Pressure always stays NORMAL (50–90). Only oxygen_purity triggers alerts.
 const SCENARIOS = [
-  // 1. LOW PRESSURE burst
-  () => ({ pressure: rand(18, 37),  oxygen_purity: rand(94, 98), label: '⬇️  LOW_PRESSURE' }),
-  // 2. HIGH PRESSURE burst
-  () => ({ pressure: rand(106, 135), oxygen_purity: rand(94, 98), label: '⬆️  HIGH_PRESSURE' }),
-  // 3. LOW PURITY burst
-  () => ({ pressure: rand(55, 85),  oxygen_purity: rand(84, 91), label: '😷 LOW_PURITY' }),
-  // 4. BOTH low pressure + low purity
-  () => ({ pressure: rand(20, 36),  oxygen_purity: rand(84, 90), label: '🚨 DUAL ALERT' }),
-  // 5. EXTREME high pressure
-  () => ({ pressure: rand(140, 160), oxygen_purity: rand(94, 98), label: '💥 EXTREME HIGH' }),
+  // 1. LOW PURITY — mild dip
+  () => ({ pressure: rand(55, 85), oxygen_purity: rand(88, 92), label: '😷 LOW_PURITY (mild)' }),
+  // 2. LOW PURITY — severe dip
+  () => ({ pressure: rand(55, 85), oxygen_purity: rand(80, 87), label: '🚨 LOW_PURITY (severe)' }),
+  // 3. LOW PURITY — critical
+  () => ({ pressure: rand(55, 85), oxygen_purity: rand(70, 79), label: '💀 LOW_PURITY (critical)' }),
+  // 4. HIGH PURITY — above 99%
+  () => ({ pressure: rand(55, 85), oxygen_purity: rand(100, 105), label: '⬆️  HIGH_PURITY' }),
 ];
 
 // Normal reading generator
