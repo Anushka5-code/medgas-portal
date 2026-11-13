@@ -1,25 +1,23 @@
 /**
  * LoginForm.jsx
  * =============
- * Right-panel login card: role selector, username + password inputs,
- * remember-me, submit button, error banner, demo credentials.
+ * Simple login card: username + password inputs, remember-me, submit button, error banner, demo credentials.
+ * Doctor portal only (no role selector).
  */
 import { useState, useEffect } from 'react';
 import { User, Lock, Eye, EyeOff, LogIn, Loader2, AlertCircle } from 'lucide-react';
-import { RoleSelector }    from './RoleSelector';
 import { DemoCredentials } from './DemoCredentials';
 
 const REMEMBER_KEY = 'medigas_remember_username';
 
 export function LoginForm({ onLogin }) {
-  const [role,     setRole]     = useState('DOCTOR');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPwd,  setShowPwd]  = useState(false);
   const [remember, setRemember] = useState(false);
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
-  const [errors,   setErrors]   = useState({});   // field-level
+  const [errors,   setErrors]   = useState({});
 
   // Restore remembered username on mount
   useEffect(() => {
@@ -44,7 +42,7 @@ export function LoginForm({ onLogin }) {
 
     try {
       setLoading(true);
-      await onLogin({ username: username.trim(), password, role });
+      await onLogin({ username: username.trim(), password, role: 'DOCTOR' });
       // Save / clear remembered username
       try {
         if (remember) localStorage.setItem(REMEMBER_KEY, username.trim());
@@ -61,8 +59,6 @@ export function LoginForm({ onLogin }) {
     setUsername(u); setPassword(p); setErrors({});
   }
 
-  const accent = role === 'NURSE' ? '#F0386B' : '#2F80ED';
-
   return (
     <form
       onSubmit={handleSubmit}
@@ -72,23 +68,9 @@ export function LoginForm({ onLogin }) {
     >
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold" style={{ color: '#1E2A4A' }}>Welcome back</h2>
-        <p className="text-sm mt-1" style={{ color: '#8A94A6' }}>Sign in to your portal</p>
+        <h2 className="text-2xl font-bold" style={{ color: '#1E2A4A' }}>Medical Gas Monitor</h2>
+        <p className="text-sm mt-1" style={{ color: '#8A94A6' }}>Sign in to continue</p>
       </div>
-
-      {/* Role selector */}
-      <div>
-        <label className="block text-xs font-semibold mb-2 uppercase tracking-wide"
-          style={{ color: '#8A94A6' }}>
-          Your role
-        </label>
-        <RoleSelector value={role} onChange={r => { setRole(r); setError(''); }} />
-      </div>
-
-      {/* Role label */}
-      <p className="text-sm font-semibold -mt-1" style={{ color: accent }}>
-        {role === 'DOCTOR' ? 'Doctor Sign In' : 'Nurse Sign In'}
-      </p>
 
       {/* Error banner */}
       {error && (
@@ -126,7 +108,7 @@ export function LoginForm({ onLogin }) {
               background: '#FAFBFF',
               color: '#1E2A4A',
             }}
-            onFocus={e  => e.target.style.borderColor = accent}
+            onFocus={e  => e.target.style.borderColor = '#2F80ED'}
             onBlur={e   => e.target.style.borderColor = errors.username ? '#EF4444' : '#E8EEFA'}
           />
         </div>
@@ -161,7 +143,7 @@ export function LoginForm({ onLogin }) {
               background: '#FAFBFF',
               color: '#1E2A4A',
             }}
-            onFocus={e => e.target.style.borderColor = accent}
+            onFocus={e => e.target.style.borderColor = '#2F80ED'}
             onBlur={e  => e.target.style.borderColor = errors.password ? '#EF4444' : '#E8EEFA'}
           />
           <button
@@ -200,16 +182,16 @@ export function LoginForm({ onLogin }) {
         type="submit"
         disabled={loading}
         className="w-full flex items-center justify-center gap-2.5 py-3 rounded-xl text-sm font-bold text-white transition-all duration-150 disabled:opacity-70"
-        style={{ background: loading ? '#8A94A6' : accent }}
+        style={{ background: loading ? '#8A94A6' : '#2F80ED' }}
       >
         {loading
           ? <><Loader2 size={16} className="animate-spin" /> Signing in…</>
-          : <><LogIn size={16} /> Sign in as {role === 'DOCTOR' ? 'Doctor' : 'Nurse'}</>
+          : <><LogIn size={16} /> Sign In</>
         }
       </button>
 
       {/* Demo credentials */}
-      <DemoCredentials role={role} onFill={handleFill} />
+      <DemoCredentials onFill={handleFill} />
 
       {/* Footer */}
       <div className="flex items-center justify-between pt-1">

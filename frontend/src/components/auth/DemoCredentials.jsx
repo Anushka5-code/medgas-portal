@@ -1,19 +1,14 @@
 /**
  * DemoCredentials.jsx
  * ===================
- * Collapsible hint panel showing demo username + password with a Fill button.
+ * Collapsible hint panel showing demo username + password with a Fill button (Doctor only).
  */
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, FlaskConical } from 'lucide-react';
 
-const DEMO = {
-  DOCTOR: { username: 'dr.sharma',    password: 'Doctor@123' },
-  NURSE:  { username: 'nurse.priya',  password: 'Nurse@123'  },
-};
-
-export function DemoCredentials({ role, onFill }) {
+export function DemoCredentials({ onFill }) {
   const [open, setOpen] = useState(false);
-  const creds = DEMO[role] || DEMO.DOCTOR;
+  const creds = { username: 'dr.sharma', password: 'Doctor@123' };
 
   return (
     <div className="rounded-xl overflow-hidden border"
@@ -29,7 +24,7 @@ export function DemoCredentials({ role, onFill }) {
       >
         <span className="flex items-center gap-2">
           <FlaskConical size={13} />
-          Demo credentials ({role === 'NURSE' ? 'Nurse' : 'Doctor'})
+          Demo credentials (Doctor)
         </span>
         {open
           ? <ChevronUp size={14} />

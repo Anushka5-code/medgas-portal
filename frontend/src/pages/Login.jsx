@@ -1,7 +1,7 @@
 /**
  * pages/Login.jsx
  * ===============
- * Full-screen split-panel login page.
+ * Full-screen split-panel login page. Doctor portal only.
  * Left: illustration + branding  |  Right: login card
  */
 import { useEffect } from 'react';
@@ -10,22 +10,20 @@ import { useAuth } from '../hooks/useAuth';
 import { LoginIllustration } from '../components/auth/LoginIllustration';
 import { LoginForm }          from '../components/auth/LoginForm';
 
-const ROLE_HOME = { DOCTOR: '/doctor', NURSE: '/nurse' };
-
 export default function Login() {
-  const { login, isAuthenticated, role, loading } = useAuth();
+  const { login, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
 
-  // Already logged in → go straight to portal
+  // Already logged in → go straight to doctor portal
   useEffect(() => {
-    if (!loading && isAuthenticated && role) {
-      navigate(ROLE_HOME[role] || '/', { replace: true });
+    if (!loading && isAuthenticated) {
+      navigate('/doctor', { replace: true });
     }
-  }, [isAuthenticated, role, loading, navigate]);
+  }, [isAuthenticated, loading, navigate]);
 
   async function handleLogin(credentials) {
-    const user = await login(credentials);          // throws on failure
-    navigate(ROLE_HOME[user.role] || '/', { replace: true });
+    await login(credentials);  // throws on failure
+    navigate('/doctor', { replace: true });
   }
 
   return (
