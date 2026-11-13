@@ -29,6 +29,16 @@ function CustomTooltip({ active, payload, label }) {
 export function PurityTrendChart({ data = [], singleDevice }) {
   const devices = singleDevice ? [singleDevice] : ALL_DEVICES;
 
+  // Debug: log first/last data points
+  if (data.length > 0) {
+    console.log('PurityTrendChart data sample:', {
+      first: data[0],
+      last: data[data.length - 1],
+      length: data.length,
+      devices,
+    });
+  }
+
   if (!data.length) {
     return (
       <div className="flex flex-col h-full gap-3">
@@ -74,13 +84,13 @@ export function PurityTrendChart({ data = [], singleDevice }) {
             <XAxis dataKey="time"
               tick={{ fontSize:10, fill:'#8A94A6', fontFamily:'Poppins,sans-serif' }}
               tickLine={false} axisLine={false} interval="preserveStartEnd" />
-            <YAxis domain={[85, 100]}
+            <YAxis domain={['auto', 'auto']}
               tick={{ fontSize:10, fill:'#8A94A6', fontFamily:'Poppins,sans-serif' }}
               tickLine={false} axisLine={false}
               tickFormatter={v => `${v}%`} />
             <Tooltip content={<CustomTooltip />} />
-            <ReferenceLine y={93} stroke="#F5A524" strokeDasharray="5 3"
-              label={{ value:'Min 93%', position:'insideTopLeft', fontSize:10, fill:'#F5A524', fontFamily:'Poppins' }} />
+            <ReferenceLine y={93} stroke="#F59E0B" strokeDasharray="5 3"
+              label={{ value:'Min 93%', position:'insideBottomLeft', fontSize:10, fill:'#F59E0B', fontFamily:'Poppins' }} />
             <ReferenceLine y={99} stroke="#8B5CF6" strokeDasharray="5 3"
               label={{ value:'Max 99%', position:'insideTopLeft', fontSize:10, fill:'#8B5CF6', fontFamily:'Poppins' }} />
             {devices.map(d => (
