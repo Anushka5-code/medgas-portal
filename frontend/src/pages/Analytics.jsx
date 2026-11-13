@@ -56,22 +56,9 @@ function Empty({ text='Not enough data yet.' }) {
   );
 }
 
-export function Analytics({ allReadings=[], trendData=[], purityTrend=[], alerts=[] }) {
+export function Analytics({ allReadings=[], purityTrend=[], alerts=[] }) {
 
-  /* 1. Pressure histogram */
-  const pressureHisto = useMemo(() => {
-    const bins = {};
-    for (let b=0; b<=140; b+=10) bins[b] = { range:`${b}–${b+10}`, count:0 };
-    allReadings.forEach(r => {
-      const v = parseFloat(r.pressure);
-      if (isNaN(v)) return;
-      const b = Math.floor(v/10)*10;
-      if (bins[b]) bins[b].count++;
-    });
-    return Object.values(bins);
-  }, [allReadings]);
-
-  /* 2. Purity histogram */
+  /* 1. Purity histogram */
   const purityHisto = useMemo(() => {
     const bins = {};
     for (let b=85; b<=100; b+=1) bins[b] = { range:`${b}%`, count:0 };
@@ -84,42 +71,40 @@ export function Analytics({ allReadings=[], trendData=[], purityTrend=[], alerts
     return Object.values(bins);
   }, [allReadings]);
 
-  /* 3. Alerts over time (LOW/HIGH/PURITY breakdown) */
+  /* 2. Alerts over time (purity only) */
   const alertsOverTime = useMemo(() => {
     const buckets = {};
     alerts.forEach(a => {
       const d = safeDate(a.started_at || a.created_at);
       if (!d) return;
       const key = `${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours()}:00`;
-      if (!buckets[key]) buckets[key] = { time:key, Pressure:0, Purity:0 };
-      if (a.parameter === 'purity') buckets[key].Purity++;
-      else                          buckets[key].Pressure++;
+      if (!buckets[key]) buckets[key] = { time:key, 'Low O₂':0, 'High O₂':0 };
+      if (a.alert_type === 'LOW_PURITY')  buckets[key]['Low O₂']++;
+      if (a.alert_type === 'HIGH_PURITY') buckets[key]['High O₂']++;
     });
     return Object.values(buckets).sort((a,b)=>a.time.localeCompare(b.time)).slice(-24);
   }, [alerts]);
 
-  /* 4. Alert type split */
+  /* 3. Alert type split */
   const alertSplit = useMemo(() => [
-    { name:'High Pressure', value: alerts.filter(a=>a.alert_type==='HIGH_PRESSURE').length, fill:'#EF4444' },
-    { name:'Low Pressure',  value: alerts.filter(a=>a.alert_type==='LOW_PRESSURE').length,  fill:'#F5A524' },
-    { name:'High Purity',   value: alerts.filter(a=>a.alert_type==='HIGH_PURITY').length,   fill:'#8B5CF6' },
-    { name:'Low Purity',    value: alerts.filter(a=>a.alert_type==='LOW_PURITY').length,    fill:'#F59E0B' },
+    { name:'High O₂ Purity', value: alerts.filter(a=>a.alert_type==='HIGH_PURITY').length, fill:'#8B5CF6' },
+    { name:'Low O₂ Purity',  value: alerts.filter(a=>a.alert_type==='LOW_PURITY').length,  fill:'#F59E0B' },
   ].filter(d=>d.value>0), [alerts]);
 
-  /* 5. Avg pressure + purity per device */
+  /* 4. Avg purity per device */
   const deviceStats = useMemo(() => DEVICES.map(id => {
-    const rows = allReadings.filter(r => r.device_id===id);
-    const pVals = rows.map(r=>parseFloat(r.pressure)).filter(v=>!isNaN(v));
+    const rows  = allReadings.filter(r => r.device_id===id);
     const oVals = rows.map(r=>parseFloat(r.oxygen_purity)).filter(v=>!isNaN(v));
     return {
       device: id,
-      avgP: pVals.length ? +(pVals.reduce((s,v)=>s+v,0)/pVals.length).toFixed(1) : 0,
-      avgO: oVals.length ? +(oVals.reduce((s,v)=>s+v,0)/oVals.length).toFixed(1) : 0,
-      countP: pVals.length, countO: oVals.length,
+      avgO:   oVals.length ? +(oVals.reduce((s,v)=>s+v,0)/oVals.length).toFixed(1) : 0,
+      minO:   oVals.length ? +Math.min(...oVals).toFixed(1) : 0,
+      maxO:   oVals.length ? +Math.max(...oVals).toFixed(1) : 0,
+      count:  oVals.length,
     };
   }), [allReadings]);
 
-  /* 6. Time to resolve per device */
+  /* 5. Time to resolve per device */
   const timeToResolve = useMemo(() => DEVICES.map(id => {
     const res = alerts.filter(a => a.device_id===id && a.status==='RESOLVED' && a.resolved_at && (a.started_at||a.created_at));
     const avg = res.length
@@ -141,7 +126,7 @@ export function Analytics({ allReadings=[], trendData=[], purityTrend=[], alerts
         <div>
           <h2 className="text-base font-bold" style={{ color:'#1E2A4A' }}>Analytics</h2>
           <p className="text-xs mt-0.5" style={{ color:'#8A94A6' }}>
-            {total.toLocaleString()} readings · {alerts.length} alerts · pressure & O₂ purity
+            {total.toLocaleString()} readings · {alerts.length} alerts · O₂ purity
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -156,40 +141,19 @@ export function Analytics({ allReadings=[], trendData=[], purityTrend=[], alerts
         </div>
       </div>
 
-      {/* Row 1: histograms */}
+      {/* Row 1: purity histogram + live trend */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <Card title="Pressure Distribution" subtitle={`Readings per 10-PSI bucket · ${total} total`}>
-          {pressureHisto.every(b=>b.count===0) ? <Empty /> : (
-            <div style={{ height:200 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={pressureHisto} margin={{ top:4,right:8,left:-20,bottom:0 }}>
-                  <CartesianGrid strokeDasharray="4 4" stroke="#F0F4FF" vertical={false} />
-                  <XAxis dataKey="range" tick={{ fontSize:9,fill:'#8A94A6',fontFamily:'Poppins' }} tickLine={false} axisLine={false} />
-                  <YAxis allowDecimals={false} tick={{ fontSize:10,fill:'#8A94A6',fontFamily:'Poppins' }} tickLine={false} axisLine={false} />
-                  <Tooltip content={<Tip />} cursor={{ fill:'#F4F7FC',radius:4 }} />
-                  <ReferenceLine x="30–40"   stroke="#F5A524" strokeDasharray="4 2" />
-                  <ReferenceLine x="100–110" stroke="#EF4444" strokeDasharray="4 2" />
-                  <Bar dataKey="count" name="Readings" radius={[4,4,0,0]} maxBarSize={22}>
-                    {pressureHisto.map((e,i) => {
-                      const mid = parseInt(e.range);
-                      return <Cell key={i} fill={mid<40?'#F5A524':mid>=100?'#EF4444':'#2F80ED'} />;
-                    })}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </Card>
-
         <Card title="O₂ Purity Distribution" subtitle="Readings per 1% bucket (85–100%)">
           {purityHisto.every(b=>b.count===0) ? <Empty /> : (
-            <div style={{ height:200 }}>
+            <div style={{ height:220 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={purityHisto} margin={{ top:4,right:8,left:-20,bottom:0 }}>
                   <CartesianGrid strokeDasharray="4 4" stroke="#F0F4FF" vertical={false} />
                   <XAxis dataKey="range" tick={{ fontSize:9,fill:'#8A94A6',fontFamily:'Poppins' }} tickLine={false} axisLine={false} />
                   <YAxis allowDecimals={false} tick={{ fontSize:10,fill:'#8A94A6',fontFamily:'Poppins' }} tickLine={false} axisLine={false} />
                   <Tooltip content={<Tip />} cursor={{ fill:'#F4F7FC',radius:4 }} />
+                  <ReferenceLine x="93%" stroke="#F5A524" strokeDasharray="4 2" />
+                  <ReferenceLine x="99%" stroke="#8B5CF6" strokeDasharray="4 2" />
                   <Bar dataKey="count" name="Readings" radius={[4,4,0,0]} maxBarSize={16}>
                     {purityHisto.map((e,i) => {
                       const v = parseInt(e.range);
@@ -201,34 +165,10 @@ export function Analytics({ allReadings=[], trendData=[], purityTrend=[], alerts
             </div>
           )}
         </Card>
-      </div>
-
-      {/* Row 2: trends */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <Card title="Live Pressure Trends" subtitle="All 4 devices">
-          {trendData.length < 2 ? <Empty /> : (
-            <div style={{ height:200 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trendData.slice(-40)} margin={{ top:4,right:8,left:-18,bottom:0 }}>
-                  <CartesianGrid strokeDasharray="4 4" stroke="#F0F4FF" vertical={false} />
-                  <XAxis dataKey="time" tick={{ fontSize:9,fill:'#8A94A6',fontFamily:'Poppins' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                  <YAxis domain={[0,140]} tick={{ fontSize:10,fill:'#8A94A6',fontFamily:'Poppins' }} tickLine={false} axisLine={false} />
-                  <Tooltip content={<Tip />} />
-                  <ReferenceLine y={40}  stroke="#F5A524" strokeDasharray="5 3" />
-                  <ReferenceLine y={100} stroke="#EF4444" strokeDasharray="5 3" />
-                  {DEVICES.map(d=>(
-                    <Line key={d} type="monotone" dataKey={d} stroke={DEVICE_COLORS[d]}
-                      strokeWidth={2} dot={false} connectNulls isAnimationActive={false} />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </Card>
 
         <Card title="Live O₂ Purity Trends" subtitle="All 4 devices">
           {purityTrend.length < 2 ? <Empty /> : (
-            <div style={{ height:200 }}>
+            <div style={{ height:220 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={purityTrend.slice(-40)} margin={{ top:4,right:8,left:-18,bottom:0 }}>
                   <CartesianGrid strokeDasharray="4 4" stroke="#F0F4FF" vertical={false} />
@@ -248,19 +188,19 @@ export function Analytics({ allReadings=[], trendData=[], purityTrend=[], alerts
         </Card>
       </div>
 
-      {/* Row 3: alerts over time + type split */}
+      {/* Row 2: alerts over time + type split */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <Card title="Alerts Over Time" subtitle="Pressure vs Purity alerts per hour" className="lg:col-span-2">
+        <Card title="O₂ Alerts Over Time" subtitle="Low & High purity alerts per hour" className="lg:col-span-2">
           {alertsOverTime.length===0 ? <Empty text="No alerts recorded yet." /> : (
             <div style={{ height:200 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={alertsOverTime} margin={{ top:4,right:8,left:-20,bottom:0 }}>
                   <defs>
-                    <linearGradient id="gP" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#EF4444" stopOpacity={0.18} />
-                      <stop offset="95%" stopColor="#EF4444" stopOpacity={0} />
+                    <linearGradient id="gLow" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor="#F59E0B" stopOpacity={0.18} />
+                      <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
                     </linearGradient>
-                    <linearGradient id="gO" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="gHigh" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%"  stopColor="#8B5CF6" stopOpacity={0.18} />
                       <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
                     </linearGradient>
@@ -269,15 +209,15 @@ export function Analytics({ allReadings=[], trendData=[], purityTrend=[], alerts
                   <XAxis dataKey="time" tick={{ fontSize:9,fill:'#8A94A6',fontFamily:'Poppins' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
                   <YAxis allowDecimals={false} tick={{ fontSize:10,fill:'#8A94A6',fontFamily:'Poppins' }} tickLine={false} axisLine={false} />
                   <Tooltip content={<Tip />} />
-                  <Area type="monotone" dataKey="Pressure" name="Pressure" stroke="#EF4444" strokeWidth={2} fill="url(#gP)" dot={false} />
-                  <Area type="monotone" dataKey="Purity"   name="Purity"   stroke="#8B5CF6" strokeWidth={2} fill="url(#gO)" dot={false} />
+                  <Area type="monotone" dataKey="Low O₂"  name="Low O₂"  stroke="#F59E0B" strokeWidth={2} fill="url(#gLow)"  dot={false} />
+                  <Area type="monotone" dataKey="High O₂" name="High O₂" stroke="#8B5CF6" strokeWidth={2} fill="url(#gHigh)" dot={false} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           )}
         </Card>
 
-        <Card title="Alert Type Split" subtitle="All 4 types">
+        <Card title="Alert Type Split" subtitle="Low O₂ vs High O₂">
           {alertSplit.length===0 ? <Empty text="No alerts yet." /> : (
             <div className="flex items-center justify-center gap-4" style={{ height:200 }}>
               <div style={{ width:130, height:130, flexShrink:0 }}>
@@ -306,24 +246,23 @@ export function Analytics({ allReadings=[], trendData=[], purityTrend=[], alerts
         </Card>
       </div>
 
-      {/* Row 4: device avg stats + time to resolve */}
+      {/* Row 3: avg O₂ per device + time to resolve */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <Card title="Avg Pressure & Purity per Device" subtitle="Mean values from all readings">
-          {deviceStats.every(d=>d.countP===0) ? <Empty /> : (
+        <Card title="Avg O₂ Purity per Device" subtitle="Mean values from all readings">
+          {deviceStats.every(d=>d.count===0) ? <Empty /> : (
             <>
               <div style={{ height:180 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={deviceStats} margin={{ top:4,right:8,left:-20,bottom:0 }} barCategoryGap="30%" barGap={3}>
+                  <BarChart data={deviceStats} margin={{ top:4,right:8,left:-20,bottom:0 }}>
                     <CartesianGrid strokeDasharray="4 4" stroke="#F0F4FF" vertical={false} />
                     <XAxis dataKey="device" tick={{ fontSize:11,fill:'#8A94A6',fontFamily:'Poppins' }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fontSize:10,fill:'#8A94A6',fontFamily:'Poppins' }} tickLine={false} axisLine={false} />
+                    <YAxis domain={[85,100]} tick={{ fontSize:10,fill:'#8A94A6',fontFamily:'Poppins' }} tickLine={false} axisLine={false} tickFormatter={v=>`${v}%`} />
                     <Tooltip content={<Tip />} cursor={{ fill:'#F4F7FC',radius:4 }} />
-                    <ReferenceLine y={40}  stroke="#F5A524" strokeDasharray="4 2" />
-                    <ReferenceLine y={100} stroke="#EF4444" strokeDasharray="4 2" />
-                    <Bar dataKey="avgP" name="Avg PSI" radius={[4,4,0,0]} maxBarSize={20}>
+                    <ReferenceLine y={93} stroke="#F5A524" strokeDasharray="4 2" />
+                    <ReferenceLine y={99} stroke="#8B5CF6" strokeDasharray="4 2" />
+                    <Bar dataKey="avgO" name="Avg O₂%" radius={[4,4,0,0]} maxBarSize={32}>
                       {deviceStats.map((e,i) => <Cell key={i} fill={DEVICE_COLORS[e.device]} />)}
                     </Bar>
-                    <Bar dataKey="avgO" name="Avg O₂%" radius={[4,4,0,0]} maxBarSize={20} fill="#4FC3F7" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -331,8 +270,8 @@ export function Analytics({ allReadings=[], trendData=[], purityTrend=[], alerts
                 {deviceStats.map(d => (
                   <div key={d.device} className="rounded-xl p-2 text-center" style={{ background:'#F4F7FC' }}>
                     <p className="text-[10px] font-bold" style={{ color:DEVICE_COLORS[d.device] }}>{d.device}</p>
-                    <p className="text-xs font-bold" style={{ color:'#1E2A4A' }}>{d.avgP} PSI</p>
                     <p className="text-xs font-bold" style={{ color:'#22C55E' }}>{d.avgO}%</p>
+                    <p className="text-[9px]" style={{ color:'#8A94A6' }}>{d.count} readings</p>
                   </div>
                 ))}
               </div>

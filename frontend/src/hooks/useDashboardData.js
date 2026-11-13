@@ -5,26 +5,13 @@ import { useWebSocket } from './useWebSocket';
 const DEVICE_IDS    = ['D001', 'D002', 'D003', 'D004'];
 const TREND_BUCKETS = 30;
 
-const P_MIN = 40, P_MAX = 100;
 const O_MIN = 93, O_MAX = 99;
 
-function classifyPressure(v) {
-  if (v === null || v === undefined || isNaN(v)) return 'UNKNOWN';
-  if (v < P_MIN) return 'LOW';
-  if (v > P_MAX) return 'HIGH';
-  return 'NORMAL';
-}
 function classifyPurity(v) {
   if (v === null || v === undefined || isNaN(v)) return 'UNKNOWN';
   if (v < O_MIN) return 'LOW';
   if (v > O_MAX) return 'HIGH';
   return 'NORMAL';
-}
-function overallStatus(pStat, oStat) {
-  if (pStat === 'HIGH' || oStat === 'HIGH') return 'HIGH';
-  if (pStat === 'LOW'  || oStat === 'LOW')  return 'LOW';
-  if (pStat === 'NORMAL' && oStat === 'NORMAL') return 'NORMAL';
-  return 'UNKNOWN';
 }
 
 function normaliseAlert(a) {
@@ -68,7 +55,6 @@ function makeActivity(type, deviceId, message, extra = {}) {
 
 export function useDashboardData({ wardId } = {}) {
   const [devices,      setDevices]      = useState({});
-  const [trendData,    setTrendData]    = useState([]);
   const [purityTrend,  setPurityTrend]  = useState([]);
   const [allReadings,  setAllReadings]  = useState([]);
   const [alerts,       setAlerts]       = useState([]);
@@ -116,41 +102,33 @@ export function useDashboardData({ wardId } = {}) {
         devMap[d.device_id] = {
           id: d.device_id,
           ward_id: d.ward_id, ward_name: d.ward_name, bed_label: d.bed_label,
-          current_pressure: null, pressure_status: 'UNKNOWN',
-          current_purity:   null, purity_status:   'UNKNOWN',
+          current_purity:   null, purity_status: 'UNKNOWN',
           status: 'UNKNOWN', last_updated: null,
-          sparkline_p: [], sparkline_o: [],
+          sparkline_o: [],
         };
       }
 
       const sorted = [...readings].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-      const pTrend = {}, oTrend = {};
+      const oTrend = {};
 
       for (const r of sorted) {
         const did = r.device_id;
         if (!devMap[did]) continue;
-        const pStat = r.status === 'NORMAL' ? 'NORMAL' : r.status === 'HIGH_PRESSURE' ? 'HIGH' : 'LOW';
         const oStat = r.purity_status === 'NORMAL' ? 'NORMAL' : r.purity_status === 'HIGH_PURITY' ? 'HIGH' : 'LOW';
-        devMap[did].current_pressure = r.pressure;
         devMap[did].current_purity   = r.oxygen_purity ?? null;
-        devMap[did].pressure_status  = pStat;
         devMap[did].purity_status    = oStat;
-        devMap[did].status           = overallStatus(pStat, oStat);
+        devMap[did].status           = oStat;
         devMap[did].last_updated     = r.timestamp;
-        devMap[did].sparkline_p      = [...devMap[did].sparkline_p, r.pressure].slice(-20);
         if (r.oxygen_purity != null)
           devMap[did].sparkline_o    = [...devMap[did].sparkline_o, r.oxygen_purity].slice(-20);
 
         const label = safeTimeLabel(r.timestamp);
         if (!label) continue;
-        if (!pTrend[label]) pTrend[label] = { time: label };
-        pTrend[label][did] = r.pressure;
         if (!oTrend[label]) oTrend[label] = { time: label };
         if (r.oxygen_purity != null) oTrend[label][did] = r.oxygen_purity;
       }
 
       setDevices(devMap);
-      setTrendData(Object.values(pTrend).slice(-TREND_BUCKETS));
       setPurityTrend(Object.values(oTrend).slice(-TREND_BUCKETS));
       setAllReadings(sorted);
       setAlerts(alertList.map(normaliseAlert));
@@ -189,39 +167,33 @@ export function useDashboardData({ wardId } = {}) {
     if (event === 'new_reading') {
       const r = msg.reading;
       if (!r) return;
-      const did      = r.device_id;
-      const pressure = parseFloat(r.pressure);
-      const purity   = parseFloat(r.oxygen_purity);
-      if (isNaN(pressure)) return;
+      const did    = r.device_id;
+      const purity = parseFloat(r.oxygen_purity);
+      if (isNaN(purity)) return;
 
-      const pStat   = classifyPressure(pressure);
-      const oStat   = isNaN(purity) ? 'UNKNOWN' : classifyPurity(purity);
-      const overall = overallStatus(pStat, oStat);
+      const oStat = classifyPurity(purity);
 
       readingCountRef.current++;
       setLastReceived(new Date());
 
       setDevices(prev => {
-        const d       = prev[did] || { id: did, sparkline_p: [], sparkline_o: [] };
-        const prevOv  = d.status;
+        const d      = prev[did] || { id: did, sparkline_o: [] };
+        const prevOv = d.status;
         const updated = {
           ...d,
-          current_pressure: pressure,
-          current_purity:   isNaN(purity) ? d.current_purity : purity,
-          pressure_status:  pStat,
-          purity_status:    oStat,
-          status:           overall,
-          last_updated:     r.timestamp || new Date().toISOString(),
-          sparkline_p:      [...(d.sparkline_p || []), pressure].slice(-20),
-          sparkline_o:      isNaN(purity) ? (d.sparkline_o || []) : [...(d.sparkline_o || []), purity].slice(-20),
+          current_purity:  purity,
+          purity_status:   oStat,
+          status:          oStat,
+          last_updated:    r.timestamp || new Date().toISOString(),
+          sparkline_o:     [...(d.sparkline_o || []), purity].slice(-20),
         };
-        if (prevOv !== 'UNKNOWN' && prevOv !== overall) {
-          if (overall !== 'NORMAL') {
+        if (prevOv !== 'UNKNOWN' && prevOv !== oStat) {
+          if (oStat !== 'NORMAL') {
             pushActivity(makeActivity('reading', did,
-              `${did} went ${overall}: P=${pressure.toFixed(1)} PSI, O₂=${isNaN(purity) ? '—' : purity.toFixed(1)}%`));
+              `${did} O₂ went ${oStat}: ${purity.toFixed(1)}%`));
           } else {
             pushActivity(makeActivity('alert_resolved', did,
-              `${did} returned to NORMAL: P=${pressure.toFixed(1)} PSI, O₂=${isNaN(purity) ? '—' : purity.toFixed(1)}%`));
+              `${did} O₂ returned to NORMAL: ${purity.toFixed(1)}%`));
           }
         }
         return { ...prev, [did]: updated };
@@ -229,23 +201,16 @@ export function useDashboardData({ wardId } = {}) {
 
       const label = safeTimeLabel(r.timestamp || new Date().toISOString());
       if (label) {
-        setTrendData(prev => {
+        setPurityTrend(prev => {
           const last = prev[prev.length - 1];
-          if (last?.time === label) return [...prev.slice(0, -1), { ...last, [did]: pressure }].slice(-TREND_BUCKETS);
-          return [...prev, { time: label, [did]: pressure }].slice(-TREND_BUCKETS);
+          if (last?.time === label) return [...prev.slice(0, -1), { ...last, [did]: purity }].slice(-TREND_BUCKETS);
+          return [...prev, { time: label, [did]: purity }].slice(-TREND_BUCKETS);
         });
-        if (!isNaN(purity)) {
-          setPurityTrend(prev => {
-            const last = prev[prev.length - 1];
-            if (last?.time === label) return [...prev.slice(0, -1), { ...last, [did]: purity }].slice(-TREND_BUCKETS);
-            return [...prev, { time: label, [did]: purity }].slice(-TREND_BUCKETS);
-          });
-        }
       }
 
       setAllReadings(prev => [...prev,
-        { device_id: did, pressure, oxygen_purity: purity, timestamp: r.timestamp,
-          status: r.status, purity_status: r.purity_status }
+        { device_id: did, oxygen_purity: purity, timestamp: r.timestamp,
+          purity_status: r.purity_status }
       ].slice(-2000));
 
       if (Array.isArray(msg.alerts)) {
@@ -343,31 +308,27 @@ export function useDashboardData({ wardId } = {}) {
   }, [pushToast]);
 
   const devList = Object.values(devices);
-  const pNormal = devList.filter(d => d.pressure_status === 'NORMAL').length;
-  const pLow    = devList.filter(d => d.pressure_status === 'LOW').length;
-  const pHigh   = devList.filter(d => d.pressure_status === 'HIGH').length;
   const oNormal = devList.filter(d => d.purity_status === 'NORMAL').length;
   const oLow    = devList.filter(d => d.purity_status === 'LOW').length;
   const oHigh   = devList.filter(d => d.purity_status === 'HIGH').length;
 
-  const activeAlerts   = alerts.filter(a => a.status === 'ACTIVE').length;
-  const pressureAlerts = alerts.filter(a => a.parameter === 'pressure' && a.status === 'ACTIVE').length;
-  const purityAlerts   = alerts.filter(a => a.parameter === 'purity'   && a.status === 'ACTIVE').length;
+  const activeAlerts       = alerts.filter(a => a.status === 'ACTIVE').length;
+  const purityAlerts       = alerts.filter(a => a.parameter === 'purity' && a.status === 'ACTIVE').length;
   const pendingEscalations = alerts.filter(a => a.escalation_status === 'PENDING').length;
 
   const elapsed = Math.max((Date.now() - windowStartRef.current) / 60000, 0.017);
   const rpm     = Math.round(readingCountRef.current / elapsed);
 
   return {
-    devices, trendData, purityTrend, allReadings, alerts, activities, wards,
+    devices, purityTrend, allReadings, alerts, activities, wards,
     loading, error, connected, lastReceived,
     stats: {
-      total: devList.length || DEVICE_IDS.length,
-      pNormal, pLow, pHigh, oNormal, oLow, oHigh,
+      total:  devList.length || DEVICE_IDS.length,
+      oNormal, oLow, oHigh,
       normal: devList.filter(d => d.status === 'NORMAL').length,
       low:    devList.filter(d => d.status === 'LOW').length,
       high:   devList.filter(d => d.status === 'HIGH').length,
-      activeAlerts, pressureAlerts, purityAlerts, pendingEscalations,
+      activeAlerts, purityAlerts, pendingEscalations,
     },
     rpm,
     toasts, pushToast, dismissToast,

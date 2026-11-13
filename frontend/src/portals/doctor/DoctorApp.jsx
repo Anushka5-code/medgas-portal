@@ -20,7 +20,7 @@ export default function DoctorApp() {
   const [selectedWard, setSelectedWard] = useState(null);  // null = all wards
 
   const {
-    devices, trendData, purityTrend, allReadings, alerts, activities, wards,
+    devices, purityTrend, allReadings, alerts, activities, wards,
     loading, error, connected, lastReceived,
     stats, rpm,
     toasts, dismissToast,
@@ -52,7 +52,6 @@ export default function DoctorApp() {
         {!loading && activeTab === 'overview' && (
           <Overview
             devices={devices}
-            trendData={trendData}
             purityTrend={purityTrend}
             alerts={alerts}
             activities={activities}
@@ -69,7 +68,6 @@ export default function DoctorApp() {
           <Devices
             devices={devices}
             alerts={alerts}
-            trendData={trendData}
             purityTrend={purityTrend}
             searchQuery={searchQuery}
             onAcknowledge={acknowledgeAlert}
@@ -89,7 +87,6 @@ export default function DoctorApp() {
         {!loading && activeTab === 'analytics' && (
           <Analytics
             allReadings={allReadings}
-            trendData={trendData}
             purityTrend={purityTrend}
             alerts={alerts}
           />

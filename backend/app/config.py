@@ -10,8 +10,6 @@ class Settings(BaseSettings):
     db_password: str = "postgres"
 
     # ── Sensor thresholds ────────────────────────────────────────────────────
-    pressure_min: float = 40.0
-    pressure_max: float = 100.0
     purity_min:   float = 93.0
     purity_max:   float = 99.0
 

@@ -23,21 +23,17 @@ from app.ws_manager import manager
 
 # ── Classifiers ──────────────────────────────────────────────────────────────
 
-def classify_pressure(pressure: float) -> str:
-    if pressure < settings.pressure_min: return "LOW_PRESSURE"
-    if pressure > settings.pressure_max: return "HIGH_PRESSURE"
-    return "NORMAL"
-
-
 def classify_purity(purity: float) -> str:
     if purity < settings.purity_min: return "LOW_PURITY"
     if purity > settings.purity_max: return "HIGH_PURITY"
     return "NORMAL"
 
+# backward-compat alias
+def classify_pressure(pressure: float) -> str:
+    return "NORMAL"
 
 def classify(pressure: float) -> str:
-    """Backward-compat alias."""
-    return classify_pressure(pressure)
+    return "NORMAL"
 
 
 # ── Audit helper ─────────────────────────────────────────────────────────────
@@ -251,21 +247,12 @@ async def process_reading(
     timestamp: datetime,
     reading_id: int,
 ) -> list[dict]:
-    """Run engine for both parameters. Returns 0–2 event dicts."""
+    """Run engine for purity only. Returns 0–1 event dicts."""
     pool     = get_pool()
-    p_status = classify_pressure(pressure)
     o_status = classify_purity(oxygen_purity)
     events   = []
 
     async with pool.acquire() as conn:
-        ev = await _process_parameter(
-            conn, device_id, pressure, p_status,
-            "pressure",
-            settings.pressure_max, settings.pressure_min,
-            timestamp, reading_id, pressure, oxygen_purity,
-        )
-        if ev: events.append(ev)
-
         ev = await _process_parameter(
             conn, device_id, oxygen_purity, o_status,
             "purity",

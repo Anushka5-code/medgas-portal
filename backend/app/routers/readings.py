@@ -33,7 +33,7 @@ async def ingest_reading(
         )
 
     pool = get_pool()
-    p_status = classify_pressure(payload.pressure)
+    p_status = "NORMAL"  # pressure not monitored
     o_status = classify_purity(payload.oxygen_purity)
 
     async with pool.acquire() as conn:

@@ -1,18 +1,17 @@
-import { Monitor, Bell, Droplets, Wind } from 'lucide-react';
-import { HeroBanner }         from '../components/cards/HeroBanner';
-import { DeviceCard }         from '../components/cards/DeviceCard';
-import { ActivityFeed }       from '../components/cards/ActivityFeed';
-import { SystemInfoCard }     from '../components/cards/SystemInfoCard';
-import { EscalationsPanel }   from '../components/cards/EscalationsPanel';
-import { PressureTrendChart } from '../components/charts/PressureTrendChart';
-import { PurityTrendChart }   from '../components/charts/PurityTrendChart';
-import { StatusDonut }        from '../components/charts/StatusDonut';
+import { Bell, Droplets } from 'lucide-react';
+import { HeroBanner }       from '../components/cards/HeroBanner';
+import { DeviceCard }       from '../components/cards/DeviceCard';
+import { ActivityFeed }     from '../components/cards/ActivityFeed';
+import { SystemInfoCard }   from '../components/cards/SystemInfoCard';
+import { EscalationsPanel } from '../components/cards/EscalationsPanel';
+import { PurityTrendChart } from '../components/charts/PurityTrendChart';
+import { StatusDonut }      from '../components/charts/StatusDonut';
 import { AlertsPerDeviceBar } from '../components/charts/AlertsPerDeviceBar';
 
 const CARD = { boxShadow:'0 4px 24px rgba(80,110,180,0.08)' };
 
 export function Overview({
-  devices, trendData, purityTrend, alerts, activities,
+  devices, purityTrend, alerts, activities,
   stats, connected, lastReceived, rpm,
   onRespond, onResolve,
 }) {
@@ -32,20 +31,14 @@ export function Overview({
         <div className="flex flex-col gap-5 flex-1 min-w-0">
           <HeroBanner stats={stats} lastReceived={lastReceived} />
 
-          {/* Trend charts */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="bg-white rounded-2xl p-5" style={{ ...CARD, minHeight:290 }}>
-              <PressureTrendChart data={trendData} />
-            </div>
-            <div className="bg-white rounded-2xl p-5" style={{ ...CARD, minHeight:290 }}>
-              <PurityTrendChart data={purityTrend} />
-            </div>
+          {/* O₂ Purity Trend */}
+          <div className="bg-white rounded-2xl p-5" style={{ ...CARD, minHeight:290 }}>
+            <PurityTrendChart data={purityTrend} />
           </div>
 
-          {/* Status donuts */}
-          <div className="bg-white rounded-2xl p-5" style={{ ...CARD, minHeight:260 }}>
+          {/* Status donut */}
+          <div className="bg-white rounded-2xl p-5" style={{ ...CARD, minHeight:220 }}>
             <StatusDonut
-              pNormal={stats.pNormal} pLow={stats.pLow} pHigh={stats.pHigh}
               oNormal={stats.oNormal} oLow={stats.oLow} oHigh={stats.oHigh}
               total={stats.total}
             />
@@ -72,7 +65,7 @@ export function Overview({
               {sorted.length === 0
                 ? ['D001','D002','D003','D004'].map(id => (
                     <div key={id} className="rounded-2xl animate-pulse"
-                      style={{ height:260, background:'#F4F7FC' }} />
+                      style={{ height:200, background:'#F4F7FC' }} />
                   ))
                 : sorted.map((dev) => (
                     <DeviceCard
@@ -92,23 +85,6 @@ export function Overview({
           {/* Statistics */}
           <div className="bg-white rounded-2xl p-5" style={CARD}>
             <h3 className="text-sm font-semibold mb-4" style={{ color:'#1E2A4A' }}>Statistics</h3>
-
-            <div className="flex items-center gap-1.5 mb-2">
-              <Wind size={11} color="#2F80ED" />
-              <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color:'#8A94A6' }}>Pressure</span>
-            </div>
-            <div className="flex flex-col gap-1.5 mb-4">
-              {[
-                { label:'Normal', value: stats.pNormal, color:'#22C55E', bg:'#F0FDF4' },
-                { label:'Low',    value: stats.pLow,    color:'#F5A524', bg:'#FFFBEB' },
-                { label:'High',   value: stats.pHigh,   color:'#EF4444', bg:'#FEF2F2' },
-              ].map(({ label, value, color, bg }) => (
-                <div key={label} className="flex items-center justify-between px-3 py-2 rounded-xl" style={{ background: bg }}>
-                  <span className="text-xs font-medium" style={{ color:'#1E2A4A' }}>{label}</span>
-                  <span className="text-sm font-bold" style={{ color }}>{value ?? 0}</span>
-                </div>
-              ))}
-            </div>
 
             <div className="flex items-center gap-1.5 mb-2">
               <Droplets size={11} color="#22C55E" />
@@ -133,9 +109,8 @@ export function Overview({
             </div>
             <div className="flex flex-col gap-1.5">
               {[
-                { label:'All Alerts',  value: stats.activeAlerts,   color:'#EF4444', bg: stats.activeAlerts   > 0 ? '#FEF2F2' : '#F4F7FC' },
-                { label:'Pressure',    value: stats.pressureAlerts, color:'#F5A524', bg: stats.pressureAlerts > 0 ? '#FFFBEB' : '#F4F7FC' },
-                { label:'O₂ Purity',   value: stats.purityAlerts,   color:'#8B5CF6', bg: stats.purityAlerts   > 0 ? '#F5F3FF' : '#F4F7FC' },
+                { label:'All Alerts', value: stats.activeAlerts, color:'#EF4444', bg: stats.activeAlerts > 0 ? '#FEF2F2' : '#F4F7FC' },
+                { label:'O₂ Purity',  value: stats.purityAlerts, color:'#8B5CF6', bg: stats.purityAlerts > 0 ? '#F5F3FF' : '#F4F7FC' },
               ].map(({ label, value, color, bg }) => (
                 <div key={`a-${label}`} className="flex items-center justify-between px-3 py-2 rounded-xl" style={{ background: bg }}>
                   <span className="text-xs font-medium" style={{ color:'#1E2A4A' }}>{label}</span>
