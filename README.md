@@ -47,7 +47,7 @@ Built with FastAPI, React 19, PostgreSQL, and WebSockets. Monitors oxygen pressu
 - JWT authentication (8-hour expiry — one clinical shift)
 - Role-based access: DOCTOR sees all wards; NURSE sees only their own ward
 - Passwords hashed with bcrypt
-- Simulator uses API key (`X-API-Key`) instead of JWT
+- Tablet model uses API key (`X-API-Key`) instead of JWT
 - WebSocket authenticated via `?token=<JWT>` query param
 - Session stored in `sessionStorage` (cleared when browser closes)
 
@@ -64,7 +64,6 @@ Built with FastAPI, React 19, PostgreSQL, and WebSockets. Monitors oxygen pressu
 | Charts | Recharts |
 | Icons | Lucide React |
 | Routing | React Router DOM v7 |
-| Simulator | Python, httpx |
 
 ---
 
@@ -106,14 +105,7 @@ medgas-portal/
 │       └── portals/
 │           ├── doctor/DoctorApp.jsx
 │           └── nurse/               ← full nurse portal (21 files)
-├── simulator/
-│   └── simulator.py                 ← scenario mode with fault injection
-├── dataset/
-│   └── pressure_data.csv
 └── docs/
-    ├── project-guide-part1.md       ← dataset, simulator, backend basics
-    ├── project-guide-part2.md       ← database, alert engine, full frontend
-    └── project-guide-part3.md       ← auth, portals, debounce, remarks
 ```
 
 ---
@@ -182,19 +174,7 @@ npm run dev
 
 Open `http://localhost:5173`
 
-### 4. Simulator
-
-```bash
-cd simulator
-python simulator.py
-```
-
-Press **F + Enter** to inject a fault immediately for a demo.
-
-Or inject on startup:
-```bash
-python simulator.py --fault-now
-```
+> **Data source:** the tablet model posts readings to `POST /readings` (being built). A test sender, `tools/mock_tablet.py`, will be added.
 
 ---
 
@@ -211,7 +191,7 @@ python simulator.py --fault-now
 ## How Alerts Work
 
 ```
-Simulator sends abnormal reading
+Tablet model (Mithun) sends abnormal reading
     ↓
 Engine checks streak (need 3 consecutive)
     ↓ (streak < 3)        ↓ (streak ≥ 3)
@@ -222,7 +202,7 @@ Silent — no alert        ALERT CREATED → WebSocket broadcast
                              ↓
                     After 3 min unacknowledged → AUTO-ESCALATED
                              ↓
-                    Simulator returns to normal readings
+                    Tablet model (Mithun) returns to normal readings
                     Engine checks close streak (need 5 normal or 20s)
                              ↓
                          ALERT AUTO-RESOLVED
@@ -244,7 +224,7 @@ Silent — no alert        ALERT CREATED → WebSocket broadcast
 
 **Reports** — `GET /handover/summary` · `GET /stats/overview`
 
-**Simulator** — `POST /readings` (X-API-Key, no JWT)
+**Tablet model** — `POST /readings` (X-API-Key, no JWT)
 
 **WebSocket** — `ws://localhost:8000/ws?token=<JWT>`
 
@@ -263,7 +243,7 @@ Full API docs available at `http://localhost:8000/docs` when the backend is runn
 | `DB_PASSWORD` | — | DB password |
 | `JWT_SECRET` | — | Secret for signing JWTs (change in production!) |
 | `ACCESS_TOKEN_EXPIRE_HOURS` | `8` | Token expiry (one shift) |
-| `SIMULATOR_API_KEY` | `sim-secret-key-2024` | API key for simulator |
+| `SIMULATOR_API_KEY` | `sim-secret-key-2024` | API key for tablet model data ingestion |
 | `AUTO_ESCALATE_MINUTES` | `3` | Minutes before auto-escalation |
 | `ALERT_OPEN_AFTER_READINGS` | `3` | Consecutive abnormal readings to open alert |
 | `ALERT_CLOSE_AFTER_READINGS` | `5` | Consecutive normal readings to close alert |

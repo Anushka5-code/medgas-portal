@@ -28,8 +28,7 @@ psql --version
 ```
 medical-gas-monitor/
 ├── backend/       ← FastAPI server   (port 3001)
-├── frontend/      ← React / Vite app (port 5173)
-└── simulator/     ← Node.js sensor simulator
+└── frontend/      ← React / Vite app (port 5173)
 ```
 
 ---
@@ -132,29 +131,11 @@ npm install
 | vite | ^8.3.0 | Dev server & bundler |
 | tailwindcss | ^4.3.3 | Utility CSS |
 
----
-
-## Step 4 — Simulator Setup
-
-### Navigate to the simulator folder:
-```powershell
-cd medical-gas-monitor/simulator
-```
-
-### Install Node dependencies:
-```powershell
-npm install
-```
-
-### Dependencies installed:
-| Package | Version | Purpose |
-|---------|---------|---------|
-| axios | ^1.20.0 | HTTP POST to backend |
-| csv-parse | ^7.0.3 | Parse pressure_data.csv |
+> **Data source:** the tablet model posts readings to `POST /readings` (being built). A test sender, `tools/mock_tablet.py`, will be added.
 
 ---
 
-## Running the App — 3 Terminals
+## Running the App — 2 Terminals
 
 Open **3 separate terminal windows** and run one command in each.
 
@@ -193,31 +174,6 @@ VITE v8.x.x  ready in 435 ms
 ```
 
 Open your browser at: **http://localhost:5173**
-
----
-
-### Terminal 3 — Simulator (Node.js)
-
-```powershell
-cd medical-gas-monitor/simulator
-node simulator.js
-```
-
-**Expected output:**
-```
-📂  Loading dataset from: .../pressure_data.csv
-✅  Loaded rows for devices: D001, D002, D003, D004
-🌐  Backend : http://localhost:3001
-⏱️   Delay   : 2000ms – 6000ms
-
-🚀  Starting simulator for D001
-🚀  Starting simulator for D002
-...
- 12:00:01   D001       72.4         NORMAL
- 12:00:03   D002       38.1         ⚠️  LOW_PRESSURE
-```
-
-The simulator continuously POSTs random sensor readings to the backend, triggering alerts when pressure goes out of range.
 
 ---
 
@@ -261,6 +217,3 @@ python -m uvicorn app.main:app --host 0.0.0.0 --port 3001 --reload
 - Check `DB_PASSWORD` in `backend/.env` matches your postgres user password
 - Confirm the database `medical_gas_db` exists
 
-### Simulator 422 errors
-- Make sure the backend is fully started before running the simulator
-- Check the `SIMULATOR_API_KEY` in `.env` matches the one in `simulator.js` (default: `sim-secret-key-2024`)
