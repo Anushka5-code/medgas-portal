@@ -1,0 +1,49 @@
+{
+  "device_id": "tab-01",
+  "timestamp": "2026-11-16T20:45:08+05:30",
+  "seq": 42,
+  "event": "status_change",
+  "alert_status": "CRITICAL",
+  "confidence_pct": 97,
+  "reading": 2.52,
+  "unit": "kg/cm2",
+  "gas": "OXYGEN",
+  "gauges": [
+    {
+      "gauge_id": "tab-01-g1",
+      "number": 1,
+      "kind": "analog",
+      "gas": "OXYGEN",
+      "reading": 2.52,
+      "unit": "kg/cm2",
+      "status": "CRITICAL",
+      "status_text": "CRITICALLY LOW",
+      "safe_low": 3.5,
+      "safe_high": 5.5,
+      "safe_critical": 3.0,
+      "safe_buffer": 0.2,
+      "confidence_pct": 96
+    },
+    {
+      "gauge_id": "tab-01-g3",
+      "number": 3,
+      "kind": "analog",
+      "gas": "VACUUM",
+      "reading": 579.4,
+      "unit": "mmHg",
+      "status": "OK",
+      "status_text": "within the safe range",
+      "safe_low": 300.0,
+      "safe_high": null,
+      "safe_critical": 200.0,
+      "safe_buffer": 25.0,
+      "confidence_pct": 95
+    }
+  ],
+  "lamps": ["red"],
+  "reasons": [
+    "#1 OXYGEN needle reads 2.52 kg/cm2 (safe range 3.5-5.5 kg/cm2) -> CRITICALLY LOW",
+    "lit RED lamp (LOW / ALARM)"
+  ],
+  "app_version": "0.1.0"
+}
