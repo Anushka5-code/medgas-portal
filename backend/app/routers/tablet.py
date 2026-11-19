@@ -37,15 +37,19 @@ async def ingest_tablet_reading(request: Request):
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid JSON body")
 
+    # ── Ignore test events BEFORE any validation (rule 11) ──────────────
+    # Test messages only carry device_id, timestamp, event, alert_status.
+    # They have no seq, so normalise() must never be called for them.
+    if payload.get("event") == "test":
+        return {"status": "ignored"}
+
     # ── Normalise ─────────────────────────────────────────────────────────
     try:
         msg = normalize(payload)
-    except (ValidationError, KeyError) as exc:
+    except KeyError as exc:
+        raise HTTPException(status_code=422, detail=f"Missing required field: {exc}")
+    except ValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
-
-    # ── Ignore test events (rule 11) ──────────────────────────────────────
-    if msg.event == "test":
-        return {"status": "ignored", "reason": "test event"}
 
     pool = get_pool()
     async with pool.acquire() as conn:
