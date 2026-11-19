@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.db.database import init_db, close_db
 from app.routers import readings, devices, alerts, ws, auth, wards, handover
+from app.routers import tablet
 from app.alert_engine.engine import check_auto_escalation
 
 
@@ -64,6 +65,7 @@ app.include_router(readings.router)
 app.include_router(devices.router)
 app.include_router(alerts.router)
 app.include_router(ws.router)
+app.include_router(tablet.router)   # POST /api/readings — tablet ingestion
 
 
 @app.get("/", tags=["health"])

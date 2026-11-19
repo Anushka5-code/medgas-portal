@@ -200,3 +200,62 @@ CREATE TABLE IF NOT EXISTS alert_remarks (
 
 CREATE INDEX IF NOT EXISTS idx_alert_remarks_alert
     ON alert_remarks (alert_id, created_at ASC);
+
+-- =============================================================
+-- Tablet ingestion — Schema v4
+-- New tables: tablet_devices, tablet_messages, gauge_readings
+-- All DDL is idempotent (CREATE TABLE IF NOT EXISTS).
+-- =============================================================
+
+-- ── Tablet devices ────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS tablet_devices (
+    device_id    VARCHAR(50)  PRIMARY KEY,
+    name         VARCHAR(100),
+    location     VARCHAR(200),
+    last_seen_at TIMESTAMPTZ,
+    status       VARCHAR(20)  NOT NULL DEFAULT 'UNKNOWN'
+);
+
+-- ── Tablet messages ───────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS tablet_messages (
+    id             SERIAL       PRIMARY KEY,
+    device_id      VARCHAR(50)  NOT NULL REFERENCES tablet_devices(device_id),
+    seq            INTEGER      NOT NULL,
+    event          VARCHAR(30)  NOT NULL,
+    alert_status   VARCHAR(20),
+    confidence_pct INTEGER,
+    timestamp      TIMESTAMPTZ  NOT NULL,   -- original message time
+    received_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    raw_payload    JSONB        NOT NULL,
+    UNIQUE (device_id, seq)
+);
+
+CREATE INDEX IF NOT EXISTS idx_tablet_messages_device_ts
+    ON tablet_messages (device_id, timestamp DESC);
+
+-- ── Gauge readings ────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS gauge_readings (
+    id             SERIAL        PRIMARY KEY,
+    message_id     INTEGER       NOT NULL REFERENCES tablet_messages(id) ON DELETE CASCADE,
+    device_id      VARCHAR(50)   NOT NULL,
+    gauge_id       VARCHAR(100),
+    number         INTEGER,
+    gas            VARCHAR(50),
+    kind           VARCHAR(20),
+    reading        NUMERIC(10,4),
+    unit           VARCHAR(20),
+    status         VARCHAR(20),
+    status_text    VARCHAR(200),
+    safe_low       NUMERIC(10,4),
+    safe_high      NUMERIC(10,4),
+    safe_critical  NUMERIC(10,4),
+    safe_buffer    NUMERIC(10,4),
+    confidence_pct INTEGER,
+    timestamp      TIMESTAMPTZ   NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_gauge_readings_device_ts
+    ON gauge_readings (device_id, timestamp DESC);
+
+CREATE INDEX IF NOT EXISTS idx_gauge_readings_message
+    ON gauge_readings (message_id);
